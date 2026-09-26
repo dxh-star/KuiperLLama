@@ -5,8 +5,8 @@ import numpy as np
 import torch
 
 def load_hf_gpt2(model_name_or_path):
-    from transformers import GPT2LMHeadModel
-    model = GPT2LMHeadModel.from_pretrained(model_name_or_path, trust_remote_code=True)
+    from transformers import AutoModelForCausalLM
+    model = AutoModelForCausalLM.from_pretrained(model_name_or_path, trust_remote_code=True)
     sd = model.state_dict()
     config = model.config
     info = {"dim": config.n_embd, "hidden_dim": 4 * config.n_embd, "n_layers": config.n_layer,
