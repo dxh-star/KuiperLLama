@@ -32,8 +32,8 @@ def load_hf_gpt2(model_name_or_path):
     weights["_tied"] = torch.allclose(weights["wte"], weights["lm_head.weight"])
     return weights, info
 
-def serialize_fp32(f, t): d=t.detach().cpu().view(-1).to(torch.float32).numpy(); f.write(struct.pack(f"{len(d)}f", *d))
-def serialize_int8(f, t): d=t.detach().cpu().view(-1).numpy().astype(np.int8); f.write(struct.pack(f"{len(d)}b", *d))
+def serialize_fp32(f, t): d=t.detach().cpu().reshape(-1).to(torch.float32).numpy(); f.write(struct.pack(f"{len(d)}f", *d))
+def serialize_int8(f, t): d=t.detach().cpu().reshape(-1).numpy().astype(np.int8); f.write(struct.pack(f"{len(d)}b", *d))
 def quantize_q80(w, gs):
     w = w.float().reshape(-1, gs); wmax = torch.abs(w).max(dim=1).values
     scale = torch.where(wmax == 0, torch.full_like(wmax, 1e-8), wmax / 127.0)
