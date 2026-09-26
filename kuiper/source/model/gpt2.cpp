@@ -176,8 +176,10 @@ void GPT2Model::create_param_quant_layers() {
   pos += static_cast<size_t>(dim) * sizeof(float);
   gpt2_layers_->layernorm_layers_.push_back(ln_final);
 
-  // cls：tied 复用 fp32 wte，必须用非量化层（否则把 fp32 当 int8 解析）
-  auto cls_layer = std::make_shared<op::MatmulLayer>(device_type_, config_->vocab_size_, dim, false);
+  // cls：int8 导出强制非共享（vs<0），文件尾写的是【量化 cls】（int8+scale），
+  // 所以 cls 必须用量化层读。共享分支（实际不用于 int8）保留 fp32 wte 读法。
+  auto cls_layer = std::make_shared<op::MatmulLayer>(device_type_, config_->vocab_size_, dim, true);
+  cls_layer->set_group_size(group_size_);
   if (config_->is_shared_weight_) {
     cls_layer->set_weight(0, {config_->vocab_size_, dim}, this->raw_model_data_->weight(0),
                           cpu_device_type);
