@@ -23,10 +23,9 @@ std::string SpeEncodeLayer::decode(const std::vector<int32_t>& token_ids) const 
 
 SpeEncodeLayer::SpeEncodeLayer(std::string token_model_path, bool has_bos, bool has_eos)
     : EncodeLayerBase(std::move(token_model_path), has_bos, has_eos) {
-  using namespace sentencepiece::util;
   spe = std::make_unique<sentencepiece::SentencePieceProcessor>();
   auto rc = spe->Load(token_model_path_);
-  if (rc.code() != StatusCode::kOk) {
+  if (!rc.ok()) {
     LOG(FATAL)
         << "The token model path is not valid, please check the path and type of token model.";
   }

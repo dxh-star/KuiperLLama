@@ -5,10 +5,18 @@ def write_kuiper_json(vocab, merges, added, output):
     json.dump({"added_tokens": added, "model": {"vocab": vocab, "merges": merges}}, open(output, "w", encoding="utf-8"), ensure_ascii=False)
     print(f"wrote {output}  vocab={len(vocab)} merges={len(merges)} added={len(added)}")
 def from_hf(model_name, output):
+    import json, os
+    tj = os.path.join(model_name, "tokenizer.json")
+    if os.path.exists(tj):
+        # 本地 HF 目录：tokenizer.json 就是目标格式，直接读取
+        d = json.load(open(tj, encoding="utf-8"))
+        write_kuiper_json(d["model"]["vocab"], d["model"]["merges"], d.get("added_tokens", []), output)
+        return
+    # 兜底：用 HF fast tokenizer
     from transformers import GPT2TokenizerFast
     tok = GPT2TokenizerFast.from_pretrained(model_name)
     vocab = tok.get_vocab()
-    merges = [f"{a} {b}" for a, b in tok.tokenizer.model.merges]
+    merges = [f"{a} {b}" for a, b in tok._tokenizer.model.merges]
     special = tok.special_tokens_map
     seen = {}
     for k, v in special.items():
