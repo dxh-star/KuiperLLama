@@ -1,3 +1,13 @@
+
+// ============================================================
+// test_cu_scale.cpp —— Scale 算子（逐元素乘以标量）测试
+//
+// 注意：本文件的用例目前被整体注释掉（未启用）。
+// 它们验证 kernel::get_scale_kernel(CUDA)：
+//   scale1_nostream：默认流，0.5f * 2.0f 期望得到 1.0f
+//   scale1_stream  ：显式流，0.4f * 2.0f 期望得到 0.8f
+// 需要恢复时去掉注释即可。
+// ============================================================
 #include <cuda_runtime_api.h>
 #include <glog/logging.h>
 #include <gtest/gtest.h>

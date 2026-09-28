@@ -1,3 +1,13 @@
+
+// ============================================================
+// test_load.cpp —— 模型文件加载（ModelConfig + 权重 mmap + MatMul 构造）单元测试
+//
+// 依赖一个测试文件 ./tmp/test.bin（header: ModelConfig + 权重数据）。
+// 覆盖内容：
+//   1. load_model_config：读取并校验 ModelConfig 头字段
+//   2. load_model_weight ：mmap 权重区，逐元素校验
+//   3. create_matmul    ：把权重喂给 MatmulLayer 前向，手算验证结果
+// ============================================================
 #include <cuda_runtime_api.h>
 #include <fcntl.h>
 #include <glog/logging.h>
@@ -8,21 +18,23 @@
 #include "../source/op/kernels/kernels_interface.h"
 #include "base/buffer.h"
 
+// 测试 1：读取模型头 ModelConfig，校验各字段
 TEST(test_load, load_model_config) {
   std::string model_path = "./tmp/test.bin";
   int32_t fd = open(model_path.data(), O_RDONLY);
-  ASSERT_NE(fd, -1);
+  ASSERT_NE(fd, -1);  // 文件必须存在
 
   FILE* file = fopen(model_path.data(), "rb");
   ASSERT_NE(file, nullptr);
 
   auto config = model::ModelConfig{};
-  fread(&config, sizeof(model::ModelConfig), 1, file);
-  ASSERT_EQ(config.dim, 16);
-  ASSERT_EQ(config.hidden_dim, 128);
-  ASSERT_EQ(config.layer_num, 256);
+  fread(&config, sizeof(model::ModelConfig), 1, file);  // 读 28 字节头部
+  ASSERT_EQ(config.dim, 16);       // 输入维度
+  ASSERT_EQ(config.hidden_dim, 128); // 隐藏维度
+  ASSERT_EQ(config.layer_num, 256);  // 层数
 }
 
+// 测试 2：mmap 权重区，校验权重就是 0..dim*hidden_dim-1
 TEST(test_load, load_model_weight) {
   std::string model_path = "./tmp/test.bin";
   int32_t fd = open(model_path.data(), O_RDONLY);
@@ -35,17 +47,23 @@ TEST(test_load, load_model_weight) {
   fread(&config, sizeof(model::ModelConfig), 1, file);
 
   fseek(file, 0, SEEK_END);
-  auto file_size = ftell(file);
+  auto file_size = ftell(file);  // 文件总大小
 
+  // 只读 mmap 整个文件
   void* data = mmap(nullptr, file_size, PROT_READ, MAP_PRIVATE, fd, 0);
+  // 权重区 = 头部之后
   float* weight_data =
       reinterpret_cast<float*>(static_cast<int8_t*>(data) + sizeof(model::ModelConfig));
 
   for (int i = 0; i < config.dim * config.hidden_dim; ++i) {
-    ASSERT_EQ(*(weight_data + i), float(i));
+    ASSERT_EQ(*(weight_data + i), float(i));  // 权重 = 0,1,2,...（连续自然数）
   }
 }
 
+// 测试 3：用 mmap 的权重构造 MatMul，手算验证前向输出
+//   W 是 (dim=16, hidden_dim=128) 的矩阵，x 是全 1 的 (128,) 向量，
+//   y[j] = sum_i W[j][i] * 1 = 第 j 行元素和
+//   W 行主序存 0..，第 j 行 = [j*128 .. (j+1)*128-1]，行和 = (j*128 + (j+1)*128-1)*128/2
 TEST(test_load, create_matmul) {
   std::string model_path = "./tmp/test.bin";
   int32_t fd = open(model_path.data(), O_RDONLY);
@@ -73,16 +91,17 @@ TEST(test_load, create_matmul) {
    *                                   1
    */
   auto wq = std::make_shared<op::MatmulLayer>(base::DeviceType::kDeviceCPU, config.dim,
-                                              config.hidden_dim, false);
+                                              config.hidden_dim, false);  // FP32 无量化
   float* in = new float[config.hidden_dim];
   for (int i = 0; i < config.hidden_dim; ++i) {
-    in[i] = 1.f;
+    in[i] = 1.f;  // 输入全 1
   }
 
   float* out = new float[config.dim];
   for (int i = 0; i < config.dim; ++i) {
     out[i] = 0.f;
   }
+  // 用外部指针包成 Tensor（不拷贝）
   tensor::Tensor tensor(base::DataType::kDataTypeFp32, config.hidden_dim, false, nullptr, in);
   tensor.set_device_type(base::DeviceType::kDeviceCPU);
 
@@ -92,16 +111,20 @@ TEST(test_load, create_matmul) {
   wq->set_input(0, tensor);
   wq->set_output(0, out_tensor);
   wq->set_weight(0, {config.dim, config.hidden_dim}, weight_data, base::DeviceType::kDeviceCPU);
-  wq->forward(); // 完成一个计算
+  wq->forward(); // 完成一个计算：y = W @ x
 
-  /** python code:
+  /** python 参考:
    *  w = np.arange(0,128 * 16).reshape(16, 128)
    *  input = np.ones(128)
    *  out = w@input
    */
+  // 手算：第 0 行和 = (0+127)*128/2 = 8128
   ASSERT_EQ(out[0], 8128);
+  // 第 1 行和 = (128+255)*128/2 = 24512
   ASSERT_EQ(out[1], 24512);
+  // 第 14 行和 = (1792+1919)*128/2 = 237504
   ASSERT_EQ(out[14], 237504);
+  // 第 15 行和 = (1920+2047)*128/2 = 253888
   ASSERT_EQ(out[15], 253888);
 
   delete[] in;
