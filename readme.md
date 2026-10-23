@@ -1,5 +1,5 @@
 # KuiperLLama 大模型推理框架，支持LLama2/3、Qwen2.5 和 GPT-2
-，全手写cuda算子，课程框架支持LLama2和3.x、Qwen2.5 以及 GPT-2 模型
+全手写cuda算子，框架支持LLama2和3.x、Qwen2.5 以及 GPT-2 模型
 
 Hi，各位朋友们好！我是 KuiperInfer 的开源作者。KuiperInfer  迄今已经在 GitHub 上已斩获 2.5k star。
  我重新推出了大模型推理框架，  支持Llama系列大模型（包括最新的LLama3.2）、Qwen2.5系列以及 GPT-2 大模型，同时支持 Cuda 加速和 Int8 量化**等。
