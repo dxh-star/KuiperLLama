@@ -1,8 +1,8 @@
-# KuiperLLama 动手自制大模型推理框架，支持LLama2/3、Qwen2.5 和 GPT-2
-> News：新课发布，《动手自制大模型推理框架》，全手写cuda算子，课程框架支持LLama2和3.x、Qwen2.5 以及 GPT-2 模型
+# KuiperLLama 大模型推理框架，支持LLama2/3、Qwen2.5 和 GPT-2
+，全手写cuda算子，课程框架支持LLama2和3.x、Qwen2.5 以及 GPT-2 模型
 
-Hi，各位朋友们好！我是 KuiperInfer 的作者。KuiperInfer 作为一门开源课程，迄今已经在 GitHub 上已斩获 2.5k star。
-如今在原课程的基础上，**我们全新推出了《动手自制大模型推理框架》， 新课程支持Llama系列大模型（包括最新的LLama3.2）、Qwen2.5系列以及 GPT-2 大模型，同时支持 Cuda 加速和 Int8 量化**，自推出以来便广受好评。
+Hi，各位朋友们好！我是 KuiperInfer 的开源作者。KuiperInfer  迄今已经在 GitHub 上已斩获 2.5k star。
+ 我重新推出了大模型推理框架，  支持Llama系列大模型（包括最新的LLama3.2）、Qwen2.5系列以及 GPT-2 大模型，同时支持 Cuda 加速和 Int8 量化**等。
 
  
 
@@ -15,7 +15,7 @@ Hi，各位朋友们好！我是 KuiperInfer 的作者。KuiperInfer 作为一�
 
 
  
-> LLama1.1b fp32模型，视频无加速，运行平台为Nvidia 3060 laptop，速度为60.34 token/s
+> LLama1.1b fp32模型，视频无加速，运行平台为Nvidia 3060 ，速度为60.34 token/s
 
 ![](./imgs/do.gif)
 
